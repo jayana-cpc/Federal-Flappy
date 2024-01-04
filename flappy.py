@@ -3,17 +3,17 @@ import random
 import sys
 import pygame
 from pygame.locals import *
+import pygame.mask
 
 # Initialize Global Variables
-
-FPS = 40
+FPS = 35
 SCREENWIDTH = 288
 SCREENHEIGHT = 512
 PIPEGAPSIZE = 150  # gap between upper and lower part of pipe
 BASEY = SCREENHEIGHT * 0.79  # position of the ground
 IMAGES, HITMASKS = {}, {}  # image, sound and hitmask  dicts
 
-# list of all possible players (tuple of 3 positions of flap)
+# list of all wing positions of the bird
 PLAYERS_LIST = (
     (
         'assets/sprites/yellowbird-upflap.png',
@@ -22,6 +22,7 @@ PLAYERS_LIST = (
     ),
 )
 
+# list of all quiz questions
 QUIZ_QUESTIONS = [
     {
         'question': 'Who is the current Chairperson of the Federal Reserve?',
@@ -52,25 +53,46 @@ QUIZ_QUESTIONS = [
         'question': 'Who appoints the members of the Board of Governors of the Federal Reserve?',
         'options': ['President of the United States', 'Chairperson of the Federal Reserve', 'Secretary of the Treasury', 'Congress'],
         'correct_answer': 'President of the United States',
-    }
+    },
+    {
+        'question': 'What is the term length for a member of the Board of Governors of the Federal Reserve?',
+        'options': ['4 years', '6 years', '8 years', '10 years'],
+        'correct_answer': '6 years',
+    },
+    {
+        'question': 'Which of the following is one of the responsibilities of the Federal Reserve Banks?',
+        'options': ['Issuing passports', 'Conducting monetary policy', 'Regulating telecommunications', 'Managing national parks'],
+        'correct_answer': 'Conducting monetary policy',
+    },
+    {
+        'question': 'Which of the following is NOT one of the Federal Reserve\'s dual mandates?',
+        'options': ['Price stability', 'Maximum employment', 'Financial market regulation', 'Moderate long-term interest rates'],
+        'correct_answer': 'Financial market regulation',
+    },
+    {
+        'question': 'What role does the Federal Open Market Committee (FOMC) play in the Federal Reserve System?',
+        'options': ['Conducting fiscal policy', 'Supervising banks', 'Making monetary policy decisions', 'Administering social security programs'],
+        'correct_answer': 'Making monetary policy decisions',
+    },
 ]
 
+# Main Function
 def main():
-    global SCREEN, FPSCLOCK
+    global SCREEN, FPSCLOCK # Initialize the Screen and FPSCLOCK (Frames)
     pygame.init()  # Initialize pygame module
     FPSCLOCK = pygame.time.Clock()
-    SCREEN = pygame.display.set_mode((SCREENWIDTH, SCREENHEIGHT))
-    pygame.display.set_caption('Federal Flappy')
+    SCREEN = pygame.display.set_mode((SCREENWIDTH, SCREENHEIGHT)) # Sets screen size to specified dimensions
+    pygame.display.set_caption('Federal Flappy') # Add Title to the
 
     # game over sprite
     IMAGES['gameover'] = pygame.image.load('assets/sprites/gameover.png').convert_alpha()
-    # message sprite for welcome screen
+    #elcome screen sprite
     IMAGES['message'] = pygame.image.load('assets/sprites/Fedmessage.png').convert_alpha()
     # ground sprite
     IMAGES['base'] = pygame.image.load('assets/sprites/base.png').convert_alpha()
 
     while True:
-        # select random background sprites
+        #background sprite
         IMAGES['background'] = pygame.image.load('assets/sprites/federalFlappyBackground.png').convert()
 
         # select player sprites
@@ -82,23 +104,24 @@ def main():
 
         # select random pipe sprites
         IMAGES['pipe'] = (
-            pygame.transform.flip(
-                pygame.image.load('assets/sprites/pipe-green.png').convert_alpha(), False, True),
+            #Flips to create top pipe
+            pygame.transform.flip(pygame.image.load('assets/sprites/pipe-green.png').convert_alpha(), False, True),  
             pygame.image.load('assets/sprites/pipe-green.png').convert_alpha(),
         )
 
         # hitmask for pipes
         HITMASKS['pipe'] = (
-            getHitmask(IMAGES['pipe'][0]),
-            getHitmask(IMAGES['pipe'][1]),
+            pygame.mask.from_surface(IMAGES['pipe'][0]),
+            pygame.mask.from_surface(IMAGES['pipe'][1]),
         )
 
         # hitmask for player
         HITMASKS['player'] = (
-            getHitmask(IMAGES['player'][0]),
-            getHitmask(IMAGES['player'][1]),
-            getHitmask(IMAGES['player'][2]),
+        pygame.mask.from_surface(IMAGES['player'][0]),
+        pygame.mask.from_surface(IMAGES['player'][1]),
+        pygame.mask.from_surface(IMAGES['player'][2]),
         )
+
         IMAGES['numbers'] = (
                 pygame.image.load('assets/sprites/0.png').convert_alpha(),
                 pygame.image.load('assets/sprites/1.png').convert_alpha(),
@@ -116,7 +139,7 @@ def main():
         crashInfo = mainGame(movementInfo)
         showGameOverScreen(crashInfo)
 
-
+# Shows welcome screen animation of flappy bird
 def showWelcomeAnimation():
     # Shows welcome screen animation of flappy bird
     # index of player to blit on the screen
@@ -130,17 +153,20 @@ def showWelcomeAnimation():
     messagex = int((SCREENWIDTH - IMAGES['message'].get_width()) / 2)
     messagey = int(SCREENHEIGHT * 0.12)
 
+    # Ground Values
     basex = 0
-    # player shm for up-down motion on the welcome screen
     playerShmVals = {'val': 0, 'dir': 1}
 
     while True:
         for event in pygame.event.get():
+
+            # Handles game quit when player exits
             if event.type == QUIT or (event.type == KEYDOWN and event.key == K_ESCAPE):
                 pygame.quit()
                 sys.exit()
+
+            # Handles game start when player hits the UP key
             if event.type == KEYDOWN and (event.key == K_SPACE or event.key == K_UP):
-                # make first flap sound and return values for mainGame
                 return {
                     'playery': playery + playerShmVals['val'],
                     'basex': basex,
@@ -148,16 +174,15 @@ def showWelcomeAnimation():
                 }
 
         # draw sprites
-        SCREEN.blit(IMAGES['background'], (0, 0))
-        SCREEN.blit(IMAGES['player'][playerIndex],
-                    (playerx, playery + playerShmVals['val']))
-        SCREEN.blit(IMAGES['message'], (messagex, messagey))
-        SCREEN.blit(IMAGES['base'], (basex, BASEY))
+        SCREEN.blit(IMAGES['background'], (0, 0)) # Draws the background at the origin
+        SCREEN.blit(IMAGES['player'][playerIndex],(playerx, playery + playerShmVals['val'])) # Draws the Player's Bird
+        SCREEN.blit(IMAGES['message'], (messagex, messagey)) # Draws the Welcome Message
+        SCREEN.blit(IMAGES['base'], (basex, BASEY)) # Draws the Ground
 
-        pygame.display.update()
+        pygame.display.update() # Updates Frames
         FPSCLOCK.tick(FPS)
 
-
+# Main Game Loop Function
 def mainGame(movementInfo):
     score = playerIndex = loopIter = 0
     playerIndexGen = movementInfo['playerIndexGen']
@@ -195,14 +220,18 @@ def mainGame(movementInfo):
     playerRotThr = 20  # rotation threshold
     playerFlapAcc = -9  # players speed on flapping
     playerFlapped = False  # True when player flaps
-    questionNumberCounter = 0
+    questionNumberCounter = 0 # Tracks Question Number
 
     while True:
         for event in pygame.event.get():
+            # Handles game quit when player exits
             if event.type == QUIT or (event.type == KEYDOWN and event.key == K_ESCAPE):
                 pygame.quit()
                 sys.exit()
+            
+            # Handles player propel when UP Key pressed
             if event.type == KEYDOWN and (event.key == K_SPACE or event.key == K_UP):
+                # Conditional ensures player cannot flap wings beyond screen area
                 if playery > -2 * IMAGES['player'][0].get_height():
                     playerVelY = playerFlapAcc
                     playerFlapped = True
@@ -223,7 +252,7 @@ def mainGame(movementInfo):
                 'playerRot': playerRot
             }
 
-        # check for score
+        # Check if Player passed a pipe to award points
         playerMidPos = playerx + IMAGES['player'][0].get_width() / 2
         for pipe in upperPipes:
             pipeMidPos = pipe['x'] + IMAGES['pipe'][0].get_width() / 2
@@ -231,7 +260,7 @@ def mainGame(movementInfo):
                 score += 1
                 passed_tube = True
 
-        # playerIndex basex change
+        # Pushes the ground forward
         if (loopIter + 1) % 3 == 0:
             playerIndex = next(playerIndexGen)
         loopIter = (loopIter + 1) % 30
@@ -254,8 +283,8 @@ def mainGame(movementInfo):
                 'assets/sprites/background-night.png').convert()  # Switch to quiz background
             handleQuizInput(QUIZ_QUESTIONS[questionNumberCounter])
             questionNumberCounter += 1
-            if questionNumberCounter > 5:
-                questionNumberCounter = 0  # Reset to 0 when it goes over 5
+            if questionNumberCounter > 8:
+                questionNumberCounter = 0  # Reset to Question 1 when reach end
             passed_tube = False
             IMAGES['background'] = pygame.image.load(
                 'assets/sprites/federalFlappyBackground.png').convert()  # Switch back to the regular background
@@ -357,9 +386,8 @@ def displayQuizScreen(question_data, feedback=None):
             SCREEN.blit(continue_surface, continue_rect)
 
         # Display wrapped options with reduced space between words
-        word_spacing = 5  # Adjust the spacing between words
         for i, line in enumerate(wrapped_options):
-            option_color = (255, 255, 255) if i == selected_option else (128, 128, 128)
+            option_color = (255, 255, 255) if i == selected_option else (219, 224, 58)
             option_surface = option_font.render(line, True, option_color)
             option_rect = option_surface.get_rect(center=(SCREENWIDTH / 2, SCREENHEIGHT * 0.4 + i * 40))
             SCREEN.blit(option_surface, option_rect)
@@ -367,17 +395,15 @@ def displayQuizScreen(question_data, feedback=None):
         pygame.display.update()
         FPSCLOCK.tick(FPS)
 
-
+#Wrap options text to fit within the specified maximum width with reduced space between words.
 def wrap_text_options(options, font, max_width):
-    #Wrap options text to fit within the specified maximum width with reduced space between words.
     wrapped_options = []
     for option in options:
         wrapped_options.extend(wrap_text(option, font, max_width, word_spacing=5))  # Adjust word spacing
     return wrapped_options
 
-
+#Wrap text to fit within the specified maximum width with adjustable word spacing.
 def wrap_text(text, font, max_width, word_spacing=0):
-    #Wrap text to fit within the specified maximum width with adjustable word spacing.
     words = text.split(' ')
     lines = []
     current_line = []
@@ -396,22 +422,19 @@ def wrap_text(text, font, max_width, word_spacing=0):
 def handleQuizInput(question_data):
     correct_option = question_data['correct_answer']
     selected_option = displayQuizScreen(question_data)
-    print("handleQuizInput", selected_option)
 
     if question_data['options'][selected_option] == correct_option:
-        print("Correct!")
         displayQuizScreen(question_data, feedback="Correct!")
         pygame.time.delay(100)  # Display the correct message for 2 seconds
         return  # Correct answer, exit the quiz loop
     else:
-        print("Incorrect! Try again.")
         displayQuizScreen(question_data, feedback="Incorrect! Try again.")
         pygame.time.delay(100)  # Display the incorrect message for 2 seconds
         handleQuizInput(question_data)  # Allow the user to try again
 
 
 def showScore(score):
-    """displays score in center of screen"""
+    #displays score in center of screen
     scoreDigits = [int(x) for x in list(str(score))]
     totalWidth = 0 # total width of all numbers to be printed
 
@@ -424,8 +447,8 @@ def showScore(score):
         SCREEN.blit(IMAGES['numbers'][digit], (Xoffset, SCREENHEIGHT * 0.1))
         Xoffset += IMAGES['numbers'][digit].get_width()
 
+#Handles when player crashes the player down and shows the gameover image
 def showGameOverScreen(crashInfo):
-    #crashes the player down and shows the gameover image
     score = crashInfo['score']
     playerx = SCREENWIDTH * 0.2
     playery = crashInfo['y']
@@ -446,7 +469,6 @@ def showGameOverScreen(crashInfo):
                 pygame.quit()
                 sys.exit()
             if event.type == KEYDOWN and (event.key == K_SPACE or event.key == K_PERIOD or event.key == K_UP):
-                print("hit")
                 if playery + playerHeight >= BASEY - 1:
                     return
 
@@ -494,7 +516,6 @@ def getRandomPipe():
         {'x': pipeX, 'y': gapY + PIPEGAPSIZE},  # lower pipe
     ]
 
-
 def checkCrash(player, upperPipes, lowerPipes):
     """returns True if the player collides with the base or pipes."""
     pi = player['index']
@@ -505,57 +526,30 @@ def checkCrash(player, upperPipes, lowerPipes):
     if player['y'] + player['h'] >= BASEY - 1:
         return [True, True]
     else:
-
-        playerRect = pygame.Rect(player['x'], player['y'],
-                                  player['w'], player['h'])
-        pipeW = IMAGES['pipe'][0].get_width()
-        pipeH = IMAGES['pipe'][0].get_height()
+        playerRect = pygame.Rect(player['x'], player['y'], player['w'], player['h'])
 
         for uPipe, lPipe in zip(upperPipes, lowerPipes):
             # upper and lower pipe rects
-            uPipeRect = pygame.Rect(uPipe['x'], uPipe['y'], pipeW, pipeH)
-            lPipeRect = pygame.Rect(lPipe['x'], lPipe['y'], pipeW, pipeH)
+            uPipeRect = pygame.Rect(uPipe['x'], uPipe['y'], IMAGES['pipe'][0].get_width(), IMAGES['pipe'][0].get_height())
+            lPipeRect = pygame.Rect(lPipe['x'], lPipe['y'], IMAGES['pipe'][1].get_width(), IMAGES['pipe'][1].get_height())
 
-            # player and upper/lower pipe hitmasks
-            pHitMask = HITMASKS['player'][pi]
-            uHitmask = HITMASKS['pipe'][0]
-            lHitmask = HITMASKS['pipe'][1]
+            # player and upper/lower pipe masks
+            pMask = pygame.mask.from_surface(IMAGES['player'][pi])
+            uMask = pygame.mask.from_surface(IMAGES['pipe'][0])
+            lMask = pygame.mask.from_surface(IMAGES['pipe'][1])
 
-            # if the bird collided with upipe or lpipe
-            uCollide = pixelCollision(playerRect, uPipeRect, pHitMask, uHitmask)
-            lCollide = pixelCollision(playerRect, lPipeRect, pHitMask, lHitmask)
+            # offset between player and pipe rects
+            offset_uPipe = (uPipeRect.x - playerRect.x, uPipeRect.y - playerRect.y)
+            offset_lPipe = (lPipeRect.x - playerRect.x, lPipeRect.y - playerRect.y)
+
+            # check for collisions
+            uCollide = pMask.overlap(uMask, offset_uPipe)
+            lCollide = pMask.overlap(lMask, offset_lPipe)
 
             if uCollide or lCollide:
                 return [True, False]
 
     return [False, False]
-
-
-def pixelCollision(rect1, rect2, hitmask1, hitmask2):
-    """Checks if two objects collide and not just their rects"""
-    rect = rect1.clip(rect2)
-
-    if rect.width == 0 or rect.height == 0:
-        return False
-
-    x1, y1 = rect.x - rect1.x, rect.y - rect1.y
-    x2, y2 = rect.x - rect2.x, rect.y - rect2.y
-
-    for x in range(rect.width):
-        for y in range(rect.height):
-            if hitmask1[x1 + x][y1 + y] and hitmask2[x2 + x][y2 + y]:
-                return True
-    return False
-
-
-def getHitmask(image):
-    """returns a hitmask using an image's alpha."""
-    mask = []
-    for x in range(image.get_width()):
-        mask.append([])
-        for y in range(image.get_height()):
-            mask[x].append(bool(image.get_at((x, y))[3]))
-    return mask
 
 if __name__ == '__main__':
     main()
